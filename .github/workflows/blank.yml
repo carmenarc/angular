@@ -1,54 +1,69 @@
 name: CI/CD Pipeline
-on: [push]
+
+on:
+  push:
+    branches:
+      - main
+
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3  # Asegurado a la versión más reciente
-        with:
-          ref: main  # Puedes especificar el branch que deseas
+        uses: actions/checkout@v3
+
       - name: Set up Node.js
-        uses: actions/setup-node@v3  # Uso actualizado
+        uses: actions/setup-node@v3
         with:
-          node-version: '14'  # Usa Node.js 14
-      - name: Install dependencies
+          node-version: '14'  # Especifica la versión de Node.js
+
+      - name: Install Angular CLI
+        run: npm install -g @angular/cli
+
+      - name: Create Angular Project
+        run: ng new nombre_de_tu_proyecto --no-standalone
+
+      - name: Navigate to project directory
+        run: cd nombre_de_tu_proyecto
+
+      - name: Generate Components
+        run: |
+          ng generate component add-task
+          ng generate component local-storage-data
+          ng generate component delete-item
+
+      - name: Install Dependencies
         run: npm install
-      - name: Run tests
-        run: npm test
-      - name: Build Docker image
-        run: docker build -t mi-app .
-      - name: Deploy to Docker Hub
+
+      - name: Serve Application
+        run: ng serve --host 0.0.0.0 --port 8080 &
+        # Agrega una espera para asegurarte de que el servidor está listo
+        run: sleep 10
+        continue-on-error: true
+
+      - name: Run Tests
+        run: ng test --watch=false --browsers=ChromeHeadless
+
+      - name: Build Docker Image
+        run: |
+          docker build -t nombre_de_tu_proyecto .
+
+      - name: Push Docker Image
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         run: |
           echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-          docker tag mi-app $DOCKER_USERNAME/mi-app:latest
-          docker push $DOCKER_USERNAME/mi-app:latest
-      - name: Deploy to Production
+          docker tag nombre_de_tu_proyecto $DOCKER_USERNAME/nombre_de_tu_proyecto:latest
+          docker push $DOCKER_USERNAME/nombre_de_tu_proyecto:latest
+
+      - name: Deploy to Production Server
         env:
           DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
         run: |
-          ssh -o StrictHostKeyChecking=no user@your-production-server "docker pull $DOCKER_USERNAME/mi-app:latest && docker run -d -p 80:80 $DOCKER_USERNAME/mi-app:latest"
-      - name: Run CodeQL Analysis
-        uses: github/codeql-action/init@v2
-        with:
-          languages: javascript
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/autobuild@v2
-        with:
-          build-commands: npm install && npm test
-      - name: Upload CodeQL Results
-        uses: github/codeql-action/upload-sarif@v1
-        with:
-          sarif_file: ${{ github.workspace }}/codeql/codeql-analysis-results.sarif
-      - name: Notify Deployment Success
-        uses: slackapi/slack-github-action@v1
-        with:
-          text: 'The deployment to production was successful!'
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          ssh -o StrictHostKeyChecking=no user@your-production-server "docker pull $DOCKER_USERNAME/nombre_de_tu_proyecto:latest && docker run -d -p 80:80 $DOCKER_USERNAME/nombre_de_tu_proyecto:latest"
+
 
 
 

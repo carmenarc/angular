@@ -16,13 +16,14 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '14'  # Especifica la versión de Node.js
+          node-version: '14'
 
       - name: Install Angular CLI
         run: npm install -g @angular/cli
 
       - name: Create Angular Project
         run: ng new nombre_de_tu_proyecto --no-standalone
+        working-directory: .
 
       - name: Navigate to project directory
         run: cd nombre_de_tu_proyecto
@@ -38,16 +39,15 @@ jobs:
 
       - name: Serve Application
         run: ng serve --host 0.0.0.0 --port 8080 &
-        # Agrega una espera para asegurarte de que el servidor está listo
-        run: sleep 10
         continue-on-error: true
+        # Wait for the server to start
+        run: sleep 10
 
       - name: Run Tests
         run: ng test --watch=false --browsers=ChromeHeadless
 
       - name: Build Docker Image
-        run: |
-          docker build -t nombre_de_tu_proyecto .
+        run: docker build -t nombre_de_tu_proyecto .
 
       - name: Push Docker Image
         env:

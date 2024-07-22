@@ -1,0 +1,43 @@
+name: CI/CD Pipeline
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      - name: Install dependencies
+        run: npm install
+      - name: Run tests
+        run: npm test
+      - name: Build Docker image
+        run: docker build -t mi-app .
+      - name: Deploy to Docker Hub
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+          docker tag mi-app $DOCKER_USERNAME/mi-app:latest
+          docker push $DOCKER_USERNAME/mi-app:latest
+      - name: Deploy to Production
+        env:
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+        run: |
+          ssh -o StrictHostKeyChecking=no user@your-production-server "docker pull $DOCKER_USERNAME/mi-app:latest && docker run -d -p 80:80 $DOCKER_USERNAME/mi-app:latest"
+      - name: Security Scan
+        uses: github/security-code-scan-action@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Notify Deployment Success
+        uses: peter-evans/slack-github-action@v1
+        with:
+          status: success
+          text: 'The deployment to production was successful!'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+

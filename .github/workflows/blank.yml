@@ -5,11 +5,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3  # Actualizamos a la versión más reciente
-      - name: Set up Node.js
-        uses: actions/setup-node@v3  # Actualizamos a la versión más reciente
+        uses: actions/checkout@v3  # Asegurado a la versión más reciente
         with:
-          node-version: '14'  # Puedes ajustar la versión de Node.js según tus necesidades
+          ref: main  # Puedes especificar el branch que deseas
+      - name: Set up Node.js
+        uses: actions/setup-node@v3  # Uso actualizado
+        with:
+          node-version: '14'  # Usa Node.js 14
       - name: Install dependencies
         run: npm install
       - name: Run tests
@@ -47,6 +49,7 @@ jobs:
           text: 'The deployment to production was successful!'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
 
 
 
